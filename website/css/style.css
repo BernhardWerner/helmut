@@ -1,0 +1,97 @@
+/* ── Color palette ─────────────────────────────────────── */
+:root {
+  --black:   #000000;
+  --grey1:   #7f7f7f;
+  --grey2:   #aaaaaa;
+  --grey3:   #d4d4d4;
+  --white:   #ffffff;
+
+  --blue0:   #19418c;
+  --blue1:   #0c5aa6;
+  --blue2:   #4093bc;
+  --blue3:   #4ac1d4;
+
+  --orange0: #d94917;
+  --orange1: #ff8c00;
+  --orange2: #ffba31;
+  --orange3: #ffe863;
+
+  --green0:  #2b911c;
+  --green1:  #43ba10;
+  --green2:  #77d228;
+  --green3:  #b2ed46;
+
+  --violet0: #5f2f91;
+  --violet1: #8b3ec0;
+  --violet2: #c271e1;
+  --violet3: #eaa8f8;
+
+  --red0:    #a11208;
+  --red1:    #d22125;
+  --red2:    #e85353;
+  --red3:    #f87b95;
+
+  --teal0:   #0a5e66;
+  --teal1:   #008077;
+  --teal2:   #08a67e;
+  --teal3:   #33e99d;
+
+  /* ── Semantic aliases ──────────────────────────────────── */
+  --color-bg:        var(--white);
+  --color-surface:   var(--grey3);
+  --color-border:    var(--grey2);
+  --color-text:      var(--black);
+  --color-text-muted: var(--grey1);
+  --color-primary:   var(--blue1);
+  --color-primary-hover: var(--blue0);
+  --color-accent:    var(--orange1);
+}
+
+/* ── Reset / base ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* ── Layout ────────────────────────────────────────────── */
+header {
+  background: var(--blue0);
+  color: var(--white);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: 0.03em;
+}
+
+main {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  margin-top: 4rem;
+}
+
+/* ── Utility ────────────────────────────────────────────── */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 1.5rem;
+}
