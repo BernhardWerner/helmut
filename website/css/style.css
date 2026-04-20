@@ -229,17 +229,18 @@ footer {
 .context-table th.add-btn-cell {
   background: var(--grey3);
   border: 1px dashed var(--grey2);
+  cursor: pointer;
 }
+.context-table th.add-btn-cell:hover { background: var(--grey2); }
 .context-table th.add-btn-cell button {
   background: none;
   border: none;
   font-size: 1.1rem;
-  cursor: pointer;
   color: var(--grey1);
   padding: 0 0.25rem;
   line-height: 1;
+  pointer-events: none;
 }
-.context-table th.add-btn-cell button:hover { color: var(--blue1); }
 
 /* filler cells in add rows/cols */
 .context-table td.add-col-spacer,

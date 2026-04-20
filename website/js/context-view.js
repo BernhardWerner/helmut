@@ -50,9 +50,10 @@ function renderTable(container, ctx, rerender) {
   const addAttrTh  = el("th", "add-btn-cell");
   const addAttrBtn = el("button");
   addAttrBtn.textContent = "+";
-  addAttrBtn.title = "Add attribute";
-  addAttrBtn.addEventListener("click", () => { ctx.addAttribute(""); rerender(); });
+  addAttrBtn.setAttribute("tabindex", "-1");
+  addAttrTh.title = "Add attribute";
   addAttrTh.appendChild(addAttrBtn);
+  addAttrTh.addEventListener("click", () => { ctx.addAttribute(""); rerender(); });
   headerRow.appendChild(addAttrTh);
 
   // ── Body rows ──
@@ -90,9 +91,10 @@ function renderTable(container, ctx, rerender) {
   const addObjTh  = el("th", "add-btn-cell");
   const addObjBtn = el("button");
   addObjBtn.textContent = "+";
-  addObjBtn.title = "Add object";
-  addObjBtn.addEventListener("click", () => { ctx.addObject(""); rerender(); });
+  addObjBtn.setAttribute("tabindex", "-1");
+  addObjTh.title = "Add object";
   addObjTh.appendChild(addObjBtn);
+  addObjTh.addEventListener("click", () => { ctx.addObject(""); rerender(); });
   addObjRow.appendChild(addObjTh);
 
   // spacers across
