@@ -6,6 +6,7 @@ export const VERSION = "0.1.0";
 
 // ── Naming ────────────────────────────────────────────────────────────────────
 
+// We want to 1-index elements. Makes the association(A=1, Z=26, AA=27) clearer. The n-- before the modulo implements that shift.
 function alphaLabel(i) {
   let label = "";
   let n = i + 1;
@@ -42,10 +43,20 @@ export function generateNames(count, scheme) {
   });
 }
 
+// ── Concept ───────────────────────────────────────────────────────────────────
+
+export class Concept {
+  constructor(extent, intent) {
+    this.extent = extent.slice(); // sorted object indices
+    this.intent = intent.slice(); // sorted attribute indices
+  }
+}
+
 // ── Context ───────────────────────────────────────────────────────────────────
 
 export class Context {
   constructor(objects, attributes, incidence) {
+    // Defensive copies so the caller can't silently corrupt the context by mutating the arrays they passed in.
     this.objects    = objects.slice();
     this.attributes = attributes.slice();
     this.incidence  = incidence.map(row => row.slice());
@@ -96,28 +107,74 @@ export class Context {
 
   // ── Derivation & closure ──────────────────────────────────────────────────
 
-  // A′ — attributes shared by every object in A (array of object indices).
-  // Empty A returns all attribute indices (vacuously true).
-  objectDerivation(A) {
+  // Empty A must return all attribute indices (vacuously true).
     return Array.from({ length: this.attributes.length }, (_, j) => j)
       .filter(j => A.every(i => this.incidence[i][j]));
   }
 
-  // B′ — objects that possess every attribute in B (array of attribute indices).
-  // Empty B returns all object indices (vacuously true).
+  // Empty B also returns all object indices.
   attributeDerivation(B) {
     return Array.from({ length: this.objects.length }, (_, i) => i)
       .filter(i => B.every(j => this.incidence[i][j]));
   }
 
-  // B′′ — closure of an attribute set: the smallest closed set containing B.
   attributeClosure(B) {
     return this.objectDerivation(this.attributeDerivation(B));
   }
 
-  // A′′ — closure of an object set: the smallest closed set containing A.
   objectClosure(A) {
     return this.attributeDerivation(this.objectDerivation(A));
+  }
+
+  // ── Concept enumeration ───────────────────────────────────────────────────
+
+  // Returns all concepts in lectic order of their intents.
+  // Uses Ganter's Next Closure algorithm in O(|G|·|M|) steps per concept.
+  enumerateConcepts() {
+    const m = this.attributes.length;
+    const concepts = [];
+    // ∅'' is the lectically smallest closed set and always the top concept's intent. Starting from empty set directly would skip it when empty set is not itself closed.
+    let intent = this.attributeClosure([]);
+
+    while (true) {
+      concepts.push(new Concept(this.attributeDerivation(intent), intent));
+
+      // Lectic order is determined by the highest-indexed position where two sets differ, so we scan right-to-left to find the first position where we can "increment".
+      const B = new Array(m).fill(false);
+      for (const j of intent) B[j] = true;
+
+      let next = null;
+      for (let j = m - 1; j >= 0; j--) {
+        if (B[j]) {
+          // Discard elements above j: the candidate we're building is (intent ∩ {0,…,j-1}) ∪ {j}, so high elements of the intent must not carry over.
+          B[j] = false;
+        } else {
+          // Candidate: (intent ∩ {0,…,j-1}) ∪ {j}
+          B[j] = true;
+          const candidate = [];
+          for (let k = 0; k <= j; k++) if (B[k]) candidate.push(k);
+          const closed = this.attributeClosure(candidate);
+
+          const closedFlags = new Array(m).fill(false);
+          for (const k of closed) closedFlags[k] = true;
+          if (closedFlags[j]) {
+            // j survived the closure — now check that nothing new appeared below j, which would mean a lectically smaller set was skipped.
+            let agrees = true;
+            for (let k = 0; k < j; k++) {
+              if (B[k] !== closedFlags[k]) { agrees = false; break; }
+            }
+            if (agrees) { next = closed; break; }
+          }
+          // j was forced out by the closure (the context entails j from lower attributes), or new lower elements appeared: not a valid increment point. Undo and keep scanning downward.
+          B[j] = false;
+        }
+      }
+
+      if (next === null) break;
+      intent = next;
+    }
+
+    return concepts;
   }
 
   // ── Serialisation ─────────────────────────────────────────────────────────
