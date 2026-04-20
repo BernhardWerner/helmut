@@ -52,6 +52,26 @@ export class Concept {
   }
 }
 
+// ── Internal helpers ─────────────────────────────────────────────────────────
+
+// Does rowA have all the 1s of rowB, plus at least one more?
+function rowStrictlyContains(rowA, rowB) {
+  let extra = false;
+  for (let j = 0; j < rowA.length; j++) {
+    if (rowB[j] && !rowA[j]) return false;
+    if (rowA[j] && !rowB[j]) extra = true;
+  }
+  return extra;
+}
+
+function rowIntersect(rows) {
+  return rows[0].map((_, j) => rows.every(r => r[j]) ? 1 : 0);
+}
+
+function rowEqual(a, b) {
+  return a.every((v, j) => v === b[j]);
+}
+
 // ── Context ───────────────────────────────────────────────────────────────────
 
 export class Context {
@@ -75,6 +95,22 @@ export class Context {
     return this;
   }
 
+  clone() {
+    return new Context(this.objects, this.attributes, this.incidence);
+  }
+
+  deleteObject(i) {
+    this.objects.splice(i, 1);
+    this.incidence.splice(i, 1);
+    return this;
+  }
+
+  deleteAttribute(j) {
+    this.attributes.splice(j, 1);
+    for (const row of this.incidence) row.splice(j, 1);
+    return this;
+  }
+
   addObject(name = "") {
     this.objects.push(name);
     this.incidence.push(new Array(this.attributes.length).fill(0));
@@ -95,6 +131,63 @@ export class Context {
   renameAttribute(j, name) {
     this.attributes[j] = name;
     return this;
+  }
+
+  clarify() {
+    const seenRows = new Set();
+    const keptObj = [];
+    for (let i = 0; i < this.objects.length; i++) {
+      const key = this.incidence[i].join(",");
+      if (!seenRows.has(key)) { seenRows.add(key); keptObj.push(i); }
+    }
+
+    const seenCols = new Set();
+    const keptAttr = [];
+    for (let j = 0; j < this.attributes.length; j++) {
+      const key = this.incidence.map(row => row[j]).join(",");
+      if (!seenCols.has(key)) { seenCols.add(key); keptAttr.push(j); }
+    }
+
+    return new Context(
+      keptObj.map(i => this.objects[i]),
+      keptAttr.map(j => this.attributes[j]),
+      keptObj.map(i => keptAttr.map(j => this.incidence[i][j])),
+    );
+  }
+
+  reduce() {
+    const c   = this.clarify();
+    const inc = c.incidence;
+    const n   = c.objects.length;
+    const m   = c.attributes.length;
+
+    const dropObj = new Set();
+    for (let i = 0; i < n; i++) {
+      const above = [];
+      for (let h = 0; h < n; h++) {
+        if (h !== i && rowStrictlyContains(inc[h], inc[i])) above.push(inc[h]);
+      }
+      if (above.length > 0 && rowEqual(rowIntersect(above), inc[i])) dropObj.add(i);
+    }
+
+    const cols = Array.from({ length: m }, (_, j) => inc.map(row => row[j]));
+    const dropAttr = new Set();
+    for (let j = 0; j < m; j++) {
+      const above = [];
+      for (let k = 0; k < m; k++) {
+        if (k !== j && rowStrictlyContains(cols[k], cols[j])) above.push(cols[k]);
+      }
+      if (above.length > 0 && rowEqual(rowIntersect(above), cols[j])) dropAttr.add(j);
+    }
+
+    const keptObj  = Array.from({ length: n }, (_, i) => i).filter(i => !dropObj.has(i));
+    const keptAttr = Array.from({ length: m }, (_, j) => j).filter(j => !dropAttr.has(j));
+
+    return new Context(
+      keptObj.map(i => c.objects[i]),
+      keptAttr.map(j => c.attributes[j]),
+      keptObj.map(i => keptAttr.map(j => inc[i][j])),
+    );
   }
 
   toArray() {

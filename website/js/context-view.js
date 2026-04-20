@@ -1,23 +1,43 @@
 // ── Public entry ─────────────────────────────────────────────────────────────
 
-export function renderContextSection(container, ctx, onNewContext) {
+export function renderContextSection(container, ctx, {
+  onNewContext, onClarify, onReduce, onRestore = null, onToggleLock,
+  onDeleteObject, onDeleteAttribute,
+  locked = false, notice = null,
+} = {}) {
   container.innerHTML = "";
 
+  // ── Toolbar ──
   const toolbar = el("div", "toolbar");
-  const newBtn  = el("button", "btn-secondary");
-  newBtn.textContent = "New Context";
-  newBtn.addEventListener("click", onNewContext);
-  toolbar.appendChild(newBtn);
+  const addBtn  = (label, handler, cls = "btn-secondary") => {
+    const b = el("button", cls);
+    b.textContent = label;
+    b.addEventListener("click", handler);
+    toolbar.appendChild(b);
+  };
+  addBtn("New Context", onNewContext);
+  toolbar.appendChild(el("span", "toolbar-sep"));
+  addBtn("Clarify", onClarify);
+  addBtn("Reduce",  onReduce);
+  if (onRestore) addBtn("Restore", onRestore, "btn-restore");
+  toolbar.appendChild(el("span", "toolbar-sep"));
+  addBtn(locked ? "\uD83D\uDD13 Unlock Context" : "\uD83D\uDD12 Lock Context", onToggleLock, locked ? "btn-unlock" : "btn-secondary");
   container.appendChild(toolbar);
 
-  const tableWrap = el("div", "table-wrap");
-  container.appendChild(tableWrap);
+  // ── Notice ──
+  if (notice) {
+    const n = el("div", "notice");
+    n.textContent = notice;
+    container.appendChild(n);
+  }
 
+  const tableWrap  = el("div", "table-wrap");
   const exportWrap = el("div", "export-section");
+  container.appendChild(tableWrap);
   container.appendChild(exportWrap);
 
   function rerender() {
-    renderTable(tableWrap, ctx, rerender);
+    renderTable(tableWrap, ctx, locked, { onDeleteObject, onDeleteAttribute }, rerender);
     renderExport(exportWrap, ctx);
   }
 
@@ -26,35 +46,41 @@ export function renderContextSection(container, ctx, onNewContext) {
 
 // ── Table ─────────────────────────────────────────────────────────────────────
 
-function renderTable(container, ctx, rerender) {
+function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute }, rerender) {
   container.innerHTML = "";
 
   const table = document.createElement("table");
-  table.className = "context-table";
+  table.className = locked ? "context-table locked" : "context-table";
 
   // ── Header row ──
   const thead     = table.createTHead();
   const headerRow = thead.insertRow();
 
-  // top-left corner
   headerRow.appendChild(el("th", "corner"));
 
-  // attribute headers
   for (let j = 0; j < ctx.attributes.length; j++) {
     const th = el("th", "attr-header");
-    makeEditable(th, ctx.attributes[j], name => ctx.renameAttribute(j, name));
+    if (locked) {
+      const span = document.createElement("span");
+      span.textContent = ctx.attributes[j];
+      th.appendChild(span);
+    } else {
+      makeEditable(th, ctx.attributes[j], name => ctx.renameAttribute(j, name));
+      addDeleteBtn(th, () => onDeleteAttribute(j));
+    }
     headerRow.appendChild(th);
   }
 
-  // "add attribute" column header
-  const addAttrTh  = el("th", "add-btn-cell");
-  const addAttrBtn = el("button");
-  addAttrBtn.textContent = "+";
-  addAttrBtn.setAttribute("tabindex", "-1");
-  addAttrTh.title = "Add attribute";
-  addAttrTh.appendChild(addAttrBtn);
-  addAttrTh.addEventListener("click", () => { ctx.addAttribute(""); rerender(); });
-  headerRow.appendChild(addAttrTh);
+  if (!locked) {
+    const addAttrTh  = el("th", "add-btn-cell");
+    const addAttrBtn = el("button");
+    addAttrBtn.textContent = "+";
+    addAttrBtn.setAttribute("tabindex", "-1");
+    addAttrTh.title = "Add attribute";
+    addAttrTh.appendChild(addAttrBtn);
+    addAttrTh.addEventListener("click", () => { ctx.addAttribute(""); rerender(); });
+    headerRow.appendChild(addAttrTh);
+  }
 
   // ── Body rows ──
   const tbody = table.createTBody();
@@ -62,44 +88,48 @@ function renderTable(container, ctx, rerender) {
   for (let i = 0; i < ctx.objects.length; i++) {
     const row = tbody.insertRow();
 
-    // object header
     const th = el("th", "obj-header");
-    makeEditable(th, ctx.objects[i], name => ctx.renameObject(i, name));
+    if (locked) {
+      const span = document.createElement("span");
+      span.textContent = ctx.objects[i];
+      th.appendChild(span);
+    } else {
+      makeEditable(th, ctx.objects[i], name => ctx.renameObject(i, name));
+      addDeleteBtn(th, () => onDeleteObject(i));
+    }
     row.appendChild(th);
 
-    // incidence cells
     for (let j = 0; j < ctx.attributes.length; j++) {
       const td = row.insertCell();
       td.className = "incidence-cell";
       if (ctx.incidence[i][j]) td.classList.add("marked");
       td.textContent = ctx.incidence[i][j] ? "×" : "";
-      td.addEventListener("click", () => {
-        ctx.toggle(i, j);
-        td.classList.toggle("marked", !!ctx.incidence[i][j]);
-        td.textContent = ctx.incidence[i][j] ? "×" : "";
-      });
+      if (!locked) {
+        td.addEventListener("click", () => {
+          ctx.toggle(i, j);
+          td.classList.toggle("marked", !!ctx.incidence[i][j]);
+          td.textContent = ctx.incidence[i][j] ? "×" : "";
+        });
+      }
     }
 
-    // spacer under add-attribute column
-    row.insertCell().className = "add-col-spacer";
+    if (!locked) row.insertCell().className = "add-col-spacer";
   }
 
-  // ── Add-object row ──
-  const addObjRow = tbody.insertRow();
-  addObjRow.className = "add-obj-row";
-
-  const addObjTh  = el("th", "add-btn-cell");
-  const addObjBtn = el("button");
-  addObjBtn.textContent = "+";
-  addObjBtn.setAttribute("tabindex", "-1");
-  addObjTh.title = "Add object";
-  addObjTh.appendChild(addObjBtn);
-  addObjTh.addEventListener("click", () => { ctx.addObject(""); rerender(); });
-  addObjRow.appendChild(addObjTh);
-
-  // spacers across
-  for (let j = 0; j <= ctx.attributes.length; j++) {
-    addObjRow.insertCell().className = "add-row-spacer";
+  if (!locked) {
+    const addObjRow = tbody.insertRow();
+    addObjRow.className = "add-obj-row";
+    const addObjTh  = el("th", "add-btn-cell");
+    const addObjBtn = el("button");
+    addObjBtn.textContent = "+";
+    addObjBtn.setAttribute("tabindex", "-1");
+    addObjTh.title = "Add object";
+    addObjTh.appendChild(addObjBtn);
+    addObjTh.addEventListener("click", () => { ctx.addObject(""); rerender(); });
+    addObjRow.appendChild(addObjTh);
+    for (let j = 0; j <= ctx.attributes.length; j++) {
+      addObjRow.insertCell().className = "add-row-spacer";
+    }
   }
 
   const center = el("div", "table-center");
@@ -110,34 +140,45 @@ function renderTable(container, ctx, rerender) {
 // ── Editable header cell ──────────────────────────────────────────────────────
 
 function makeEditable(th, initialValue, onChange) {
+  const wrap = el("div", "header-label");
   const span = document.createElement("span");
   span.textContent = initialValue;
-  th.appendChild(span);
+  wrap.appendChild(span);
+  th.appendChild(wrap);
   th.title = "Click to rename";
 
   th.addEventListener("click", e => {
     if (e.target.tagName === "INPUT") return;
+    if (e.target.classList.contains("delete-btn")) return;
 
     const input = document.createElement("input");
     input.type      = "text";
     input.value     = span.textContent;
     input.className = "header-input";
-    th.replaceChildren(input);
+    wrap.replaceChildren(input);
     input.focus();
     input.select();
 
     const commit = () => {
       onChange(input.value);
       span.textContent = input.value;
-      th.replaceChildren(span);
+      wrap.replaceChildren(span);
     };
 
     input.addEventListener("blur", commit);
     input.addEventListener("keydown", e => {
       if (e.key === "Enter")  { e.preventDefault(); input.blur(); }
-      if (e.key === "Escape") { th.replaceChildren(span); }
+      if (e.key === "Escape") { wrap.replaceChildren(span); }
     });
   });
+}
+
+function addDeleteBtn(th, onDelete) {
+  const btn = el("button", "delete-btn");
+  btn.textContent = "✕";
+  btn.title = "Delete";
+  btn.addEventListener("click", e => { e.stopPropagation(); onDelete(); });
+  th.appendChild(btn);
 }
 
 // ── CSV export ────────────────────────────────────────────────────────────────
