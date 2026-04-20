@@ -206,6 +206,24 @@ footer {
 }
 .btn-unlock:hover { background: var(--blue1); }
 
+.btn-arrows {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-arrows:hover { background: var(--color-surface); }
+.btn-arrows.active {
+  background: var(--blue1);
+  color: var(--white);
+  border-color: var(--blue1);
+}
+.btn-arrows.active:hover { background: var(--blue0); }
+
 /* ── Notice ──────────────────────────────────────────────────────────────── */
 .notice {
   background: var(--white);
@@ -215,6 +233,11 @@ footer {
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   margin-bottom: 1.25rem;
+}
+.notice.notice-warning {
+  color: var(--orange0);
+  border-color: var(--orange1);
+  background: var(--orange3);
 }
 
 /* ── Context table ───────────────────────────────────────────────────────── */
@@ -323,6 +346,7 @@ footer {
 .context-table td.incidence-cell:hover        { background: var(--grey3); }
 .context-table td.incidence-cell.marked       { background: var(--orange3); color: var(--orange0); }
 .context-table td.incidence-cell.marked:hover { background: var(--orange2); }
+.context-table td.incidence-cell.has-arrow    { color: var(--blue1); font-size: 1rem; }
 
 /* add-row / add-col buttons */
 .context-table th.add-btn-cell {

@@ -271,6 +271,11 @@ export class Context {
     return concepts;
   }
 
+  isReduced() {
+    const r = this.reduce();
+    return r.objects.length === this.objects.length && r.attributes.length === this.attributes.length;
+  }
+
   // ── Serialisation ─────────────────────────────────────────────────────────
 
   toCSV({ marked = "X", empty = "", headers = true } = {}) {
@@ -285,4 +290,66 @@ export class Context {
     }
     return rows.join("\n");
   }
+}
+
+// ── Concept Lattice ───────────────────────────────────────────────────────────
+
+export function computeLattice(context) {
+  const concepts = context.enumerateConcepts();
+  const n = concepts.length;
+  const extentSets = concepts.map(c => new Set(c.extent));
+
+  function isStrictSubset(a, b) {
+    if (a.size >= b.size) return false;
+    for (const x of a) if (!b.has(x)) return false;
+    return true;
+  }
+
+  const covers = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (!isStrictSubset(extentSets[i], extentSets[j])) continue;
+      let direct = true;
+      for (let k = 0; k < n && direct; k++) {
+        if (k !== i && k !== j && isStrictSubset(extentSets[i], extentSets[k]) && isStrictSubset(extentSets[k], extentSets[j]))
+          direct = false;
+      }
+      if (direct) covers.push([i, j]);
+    }
+  }
+
+  return { context, concepts, covers };
+}
+
+// ── Arrow Relations ───────────────────────────────────────────────────────────
+
+// Returns a G×M matrix: 0=none, 1=↑(up-arrow), 2=↓(down-arrow), 3=↕(both)
+// Only defined for non-incident pairs; incident pairs always get 0.
+export function computeArrows(context) {
+  const { objects, attributes, incidence } = context;
+  const n = objects.length;
+  const m = attributes.length;
+  const cols = Array.from({ length: m }, (_, j) => incidence.map(row => row[j]));
+
+  const arrows = Array.from({ length: n }, () => new Array(m).fill(0));
+
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < m; j++) {
+      if (incidence[i][j]) continue;
+
+      let up = true;
+      for (let h = 0; h < n && up; h++) {
+        if (rowStrictlyContains(incidence[h], incidence[i]) && !incidence[h][j]) up = false;
+      }
+
+      let down = true;
+      for (let k = 0; k < m && down; k++) {
+        if (rowStrictlyContains(cols[k], cols[j]) && !incidence[i][k]) down = false;
+      }
+
+      arrows[i][j] = (up ? 1 : 0) | (down ? 2 : 0);
+    }
+  }
+
+  return arrows;
 }

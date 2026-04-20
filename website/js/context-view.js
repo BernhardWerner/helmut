@@ -1,9 +1,11 @@
+import { computeLattice, computeArrows } from "../../src/helmut.js";
+
 // ── Public entry ─────────────────────────────────────────────────────────────
 
 export function renderContextSection(container, ctx, {
   onNewContext, onClarify, onReduce, onUndo, canUndo = false, onToggleLock,
   onDeleteObject, onDeleteAttribute, onBeforeMutate,
-  locked = false, notice = null,
+  locked = false, notice = null, showArrows = false, onToggleArrows,
 } = {}) {
   container.innerHTML = "";
 
@@ -14,28 +16,58 @@ export function renderContextSection(container, ctx, {
     b.textContent = label;
     b.addEventListener("click", handler);
     toolbar.appendChild(b);
+    return b;
   };
   addBtn("New Context", onNewContext);
   toolbar.appendChild(el("span", "toolbar-sep"));
   addBtn("Clarify", onClarify);
   addBtn("Reduce",  onReduce);
+
   const undoBtn = el("button", "btn-undo");
   undoBtn.textContent = "Undo";
   undoBtn.disabled = !canUndo;
   undoBtn.addEventListener("click", onUndo);
   toolbar.appendChild(undoBtn);
 
-  function beforeMutate() { onBeforeMutate(); undoBtn.disabled = false; }
+  const arrowsBtn = el("button", showArrows ? "btn-arrows active" : "btn-arrows");
+  arrowsBtn.textContent = "Show Arrows";
+  arrowsBtn.addEventListener("click", onToggleArrows);
+  toolbar.appendChild(arrowsBtn);
+
+  // ── Concept count button ──
+  let conceptCount = null;
+  const calcBtn = el("button", "btn-secondary");
+  const updateCalcBtn = () => {
+    calcBtn.textContent = conceptCount !== null ? `${conceptCount} concepts` : "Calculate Concepts";
+  };
+  updateCalcBtn();
+  calcBtn.addEventListener("click", () => {
+    conceptCount = computeLattice(ctx).concepts.length;
+    updateCalcBtn();
+  });
+
+  function beforeMutate() {
+    onBeforeMutate();
+    undoBtn.disabled = false;
+    conceptCount = null;
+    updateCalcBtn();
+  }
+
   toolbar.appendChild(el("span", "toolbar-sep"));
+  toolbar.appendChild(calcBtn);
   addBtn(locked ? "\uD83D\uDD13 Unlock Context" : "\uD83D\uDD12 Lock Context", onToggleLock, locked ? "btn-unlock" : "btn-secondary");
   container.appendChild(toolbar);
 
-  // ── Notice ──
+  // ── Notices ──
   if (notice) {
     const n = el("div", "notice");
     n.textContent = notice;
     container.appendChild(n);
   }
+
+  const warningDiv = el("div", "notice notice-warning");
+  warningDiv.hidden = true;
+  container.appendChild(warningDiv);
 
   const tableWrap  = el("div", "table-wrap");
   const exportWrap = el("div", "export-section");
@@ -43,7 +75,16 @@ export function renderContextSection(container, ctx, {
   container.appendChild(exportWrap);
 
   function rerender() {
-    renderTable(tableWrap, ctx, locked, { onDeleteObject, onDeleteAttribute, onBeforeMutate: beforeMutate }, rerender);
+    const arrows = showArrows ? computeArrows(ctx) : null;
+
+    if (showArrows && !ctx.isReduced()) {
+      warningDiv.textContent = "Context is not reduced — arrows may be misleading.";
+      warningDiv.hidden = false;
+    } else {
+      warningDiv.hidden = true;
+    }
+
+    renderTable(tableWrap, ctx, locked, { onDeleteObject, onDeleteAttribute, onBeforeMutate: beforeMutate }, rerender, arrows);
     renderExport(exportWrap, ctx);
   }
 
@@ -52,7 +93,7 @@ export function renderContextSection(container, ctx, {
 
 // ── Table ─────────────────────────────────────────────────────────────────────
 
-function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute, onBeforeMutate }, rerender) {
+function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute, onBeforeMutate }, rerender, arrows) {
   container.innerHTML = "";
 
   const table = document.createElement("table");
@@ -108,14 +149,26 @@ function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute
     for (let j = 0; j < ctx.attributes.length; j++) {
       const td = row.insertCell();
       td.className = "incidence-cell";
-      if (ctx.incidence[i][j]) td.classList.add("marked");
-      td.textContent = ctx.incidence[i][j] ? "×" : "";
+      if (ctx.incidence[i][j]) {
+        td.classList.add("marked");
+        td.textContent = "×";
+      } else if (arrows) {
+        const a = arrows[i][j];
+        if (a > 0) {
+          td.classList.add("has-arrow");
+          td.textContent = a === 1 ? "↑" : a === 2 ? "↓" : "↕";
+        }
+      }
       if (!locked) {
         td.addEventListener("click", () => {
           onBeforeMutate();
           ctx.toggle(i, j);
-          td.classList.toggle("marked", !!ctx.incidence[i][j]);
-          td.textContent = ctx.incidence[i][j] ? "×" : "";
+          if (arrows !== null) {
+            rerender();
+          } else {
+            td.classList.toggle("marked", !!ctx.incidence[i][j]);
+            td.textContent = ctx.incidence[i][j] ? "×" : "";
+          }
         });
       }
     }

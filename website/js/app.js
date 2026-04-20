@@ -7,6 +7,7 @@ const contextSection = document.getElementById("context-section");
 let currentContext = null;
 let currentNotice  = null;
 let locked         = false;
+let showArrows     = false;
 const undoStack    = [];
 const MAX_UNDO     = 50;
 
@@ -87,6 +88,7 @@ function showContext(ctx) {
   currentContext   = ctx;
   currentNotice    = null;
   locked           = false;
+  showArrows       = false;
   undoStack.length = 0;
   createSection.hidden  = true;
   contextSection.hidden = false;
@@ -104,7 +106,9 @@ function renderCurrent() {
     onDeleteObject:    i => deleteItem("object",    i),
     onDeleteAttribute: j => deleteItem("attribute", j),
     onBeforeMutate:    pushUndo,
+    onToggleArrows:    () => { showArrows = !showArrows; renderCurrent(); },
     locked,
+    showArrows,
     notice:            currentNotice,
   });
 }
