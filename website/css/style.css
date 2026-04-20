@@ -1,4 +1,18 @@
-/* ── Color palette ─────────────────────────────────────── */
+/* ── Font ────────────────────────────────────────────────────────────────── */
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-Light.ttf");         font-weight: 300; font-style: normal; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-LightItalic.ttf");   font-weight: 300; font-style: italic; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-Book.ttf");          font-weight: 400; font-style: normal; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-BookItalic.ttf");    font-weight: 400; font-style: italic; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-Medium.ttf");        font-weight: 500; font-style: normal; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-MediumItalic.ttf");  font-weight: 500; font-style: italic; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-Semibold.ttf");      font-weight: 600; font-style: normal; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-SemiboldItalic.ttf"); font-weight: 600; font-style: italic; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-Bold.ttf");          font-weight: 700; font-style: normal; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-BoldItalic.ttf");    font-weight: 700; font-style: italic; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-Black.ttf");         font-weight: 900; font-style: normal; }
+@font-face { font-family: nebula; src: url("../fonts/NebulaSans-BlackItalic.ttf");   font-weight: 900; font-style: italic; }
+
+/* ── Color palette ───────────────────────────────────────────────────────── */
 :root {
   --black:   #000000;
   --grey1:   #7f7f7f;
@@ -36,32 +50,32 @@
   --teal2:   #08a67e;
   --teal3:   #33e99d;
 
-  /* ── Semantic aliases ──────────────────────────────────── */
-  --color-bg:        var(--white);
-  --color-surface:   var(--grey3);
-  --color-border:    var(--grey2);
-  --color-text:      var(--black);
-  --color-text-muted: var(--grey1);
-  --color-primary:   var(--blue1);
-  --color-primary-hover: var(--blue0);
-  --color-accent:    var(--orange1);
+  /* ── Semantic aliases ──────────────────────────────────────────────────── */
+  --color-bg:           var(--white);
+  --color-surface:      var(--grey3);
+  --color-border:       var(--grey2);
+  --color-text:         var(--black);
+  --color-text-muted:   var(--grey1);
+  --color-primary:      var(--blue1);
+  --color-primary-dark: var(--blue0);
+  --color-accent:       var(--orange1);
 }
 
-/* ── Reset / base ──────────────────────────────────────── */
+/* ── Reset / base ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  font-family: nebula, system-ui, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
 }
 
-/* ── Layout ────────────────────────────────────────────── */
+/* ── Layout ──────────────────────────────────────────────────────────────── */
 header {
   background: var(--blue0);
   color: var(--white);
-  padding: 1rem 2rem;
+  padding: 0.75rem 2rem;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -69,12 +83,17 @@ header {
 
 header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   letter-spacing: 0.03em;
 }
 
+.header-sub {
+  opacity: 0.75;
+  font-size: 0.95rem;
+}
+
 main {
-  max-width: 960px;
+  max-width: 1100px;
   margin: 2rem auto;
   padding: 0 2rem;
 }
@@ -88,10 +107,186 @@ footer {
   margin-top: 4rem;
 }
 
-/* ── Utility ────────────────────────────────────────────── */
-.card {
-  background: var(--color-surface);
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1.4rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.btn-primary:hover { background: var(--color-primary-dark); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 1.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.btn-secondary:hover { background: var(--color-surface); }
+
+/* ── Create form ─────────────────────────────────────────────────────────── */
+#create-section h2 { margin-top: 0; }
+
+.form-row {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.form-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.form-row input[type="number"],
+.form-row select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 1rem;
+  background: var(--white);
+  min-width: 10rem;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.toolbar {
+  margin-bottom: 1.25rem;
+}
+
+/* ── Context table ───────────────────────────────────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  margin-bottom: 2.5rem;
+}
+
+.context-table {
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.context-table th,
+.context-table td {
+  border: 1px solid var(--color-border);
+  padding: 0.25rem 0.5rem;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+/* corner (top-left) */
+.context-table th.corner {
+  background: var(--grey3);
+  border-color: var(--grey3);
+  min-width: 1.5rem;
+}
+
+/* attribute headers (top row) */
+.context-table th.attr-header {
+  background: var(--violet1);
+  color: var(--white);
+  cursor: pointer;
+  font-weight: 600;
+  min-width: 5rem;
+}
+.context-table th.attr-header:hover { background: var(--violet0); }
+
+/* object headers (left column) */
+.context-table th.obj-header {
+  background: var(--teal1);
+  color: var(--white);
+  cursor: pointer;
+  font-weight: 600;
+  text-align: left;
+  min-width: 7rem;
+}
+.context-table th.obj-header:hover { background: var(--teal0); }
+
+/* incidence cells */
+.context-table td.incidence-cell {
+  cursor: pointer;
+  user-select: none;
+  font-size: 1.4rem;
+  height: 2.2rem;
+  background: var(--white);
+}
+.context-table td.incidence-cell:hover        { background: var(--grey3); }
+.context-table td.incidence-cell.marked       { background: var(--orange3); color: var(--orange0); }
+.context-table td.incidence-cell.marked:hover { background: var(--orange2); }
+
+/* add-row / add-col buttons */
+.context-table th.add-btn-cell {
+  background: var(--grey3);
+  border: 1px dashed var(--grey2);
+}
+.context-table th.add-btn-cell button {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--grey1);
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+.context-table th.add-btn-cell button:hover { color: var(--blue1); }
+
+/* filler cells in add rows/cols */
+.context-table td.add-col-spacer,
+.context-table td.add-row-spacer {
+  background: var(--grey3);
+  border: 1px dashed var(--grey2);
+}
+
+/* inline header input */
+.header-input {
+  background: var(--white);
+  border: 1px solid var(--blue2);
+  border-radius: 3px;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.9rem;
+  color: var(--black);
+  width: 100%;
+  min-width: 4rem;
+  outline: none;
+}
+
+/* ── CSV export ──────────────────────────────────────────────────────────── */
+.export-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.5rem;
+}
+
+.export-section h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.export-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.option-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.option-group span {
+  color: var(--color-text-muted);
+}
+
+.option-group label {
+  cursor: pointer;
 }

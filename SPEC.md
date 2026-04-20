@@ -1,21 +1,20 @@
 # Helmut — Data Structure Specification
 
-This document defines the canonical data structures used throughout the library.
+This document defines the canonical data structures used throughout the library. Not every concept is explained here, see the [Wikipedia article on formalconcpet analysis](https://en.wikipedia.org/wiki/Formal_concept_analysis) or the excelent book of the same name by Bernhard Ganter and Rudolf Wille.
+
 Every structure has two representations:
 
 - **JS object** — used internally and on the website.
 - **Array encoding** — the lossless serialization required for CindyJS interop.
   Every JS object must be convertible to this form (e.g. via a `toArray()` helper).
 
-Array encodings use only nested arrays, numbers, and strings — no objects,
-no booleans (use `1`/`0` instead).
+Array encodings use only nested arrays, numbers, and strings- Booleans are fine per se, but for the entries of the incidence matrix and similar structures, use `1`/`0` instead.
 
 ---
 
-## 1. Formal Context
+## 1. Context
 
-A formal context is a triple **K = (G, M, I)**: a set of objects *G*, a set of
-attributes *M*, and an incidence relation *I ⊆ G × M*.
+A context is a triple **K = (G, M, I)**: a set of objects *G*, a set of attributes *M*, and an incidence relation *I ⊆ G × M*.
 
 ### JS object
 
@@ -49,11 +48,9 @@ attributes *M*, and an incidence relation *I ⊆ G × M*.
 
 ---
 
-## 2. Formal Concept
+## 2. Concept
 
-A formal concept is a pair **(A, B)** where *A ⊆ G* is the **extent** and
-*B ⊆ M* is the **intent**, satisfying *A′ = B* and *B′ = A*.
-Indices refer to positions in the parent context's `objects` / `attributes` arrays.
+A concept is a pair **(A, B)** where *A ⊆ G* is the **extent** and *B ⊆ M* is the **intent**, satisfying *A′ = B* and *B′ = A*. Indices refer to positions in the parent context's `objects` / `attributes` arrays.
 
 ### JS object
 
@@ -78,8 +75,7 @@ Indices refer to positions in the parent context's `objects` / `attributes` arra
 
 ## 3. Concept Lattice
 
-The concept lattice collects all formal concepts of a context together with
-their partial order and the covering (Hasse) edges used for drawing.
+The concept lattice collects all concepts of a context together with their partial order and the covering (Hasse) edges used for drawing.
 
 ### JS object
 
@@ -103,8 +99,7 @@ their partial order and the covering (Hasse) edges used for drawing.
 }
 ```
 
-`covers[k] = [i, j]` means concept `i` is directly covered by concept `j`
-(i.e. concept `i` ≤ concept `j` with no concept in between).
+`covers[k] = [i, j]` means concept `i` is directly covered by concept `j` (i.e. concept `i` ≤ concept `j` with no concept in between).
 
 ### Array encoding
 
@@ -124,8 +119,7 @@ their partial order and the covering (Hasse) edges used for drawing.
 
 ## 4. Diagram Layout
 
-A layout attaches a 2-D position to each concept node. Coordinates are
-abstract (not pixels); the renderer is responsible for scaling.
+A layout attaches a 2D position to each concept node. Coordinates are abstract (not pixels); the renderer is responsible for scaling.
 Convention: *y* increases upward, so the top concept has the largest *y*.
 
 ### JS object
@@ -160,10 +154,7 @@ Convention: *y* increases upward, so the top concept has the largest *y*.
 
 ## 5. Attribute Implication
 
-An implication **P → C** states that every object possessing all attributes
-in premise *P* also possesses all attributes in conclusion *C*.
-Indices refer to positions in a context's `attributes` array.
-The conclusion conventionally excludes attributes already in the premise.
+An implication **P → C** states that every object possessing all attributes in premise *P* also possesses all attributes in conclusion *C*. Indices refer to positions in a context's `attributes` array. The conclusion conventionally excludes attributes already in the premise.
 
 ### JS object
 
@@ -184,8 +175,7 @@ The conclusion conventionally excludes attributes already in the premise.
 [[0, 1], [2]]
 ```
 
-A **set of implications** (e.g. a Duquenne–Guigues basis) is simply an array
-of implication array encodings:
+A **set of implications** (e.g. a Duquenne–Guigues basis) is simply an array of implication array encodings:
 
 ```
 [[[0,1],[2]], [[2],[0]], ...]
