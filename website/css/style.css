@@ -181,7 +181,7 @@ footer {
   flex: 1;
 }
 
-.btn-restore {
+.btn-undo {
   background: transparent;
   color: var(--orange0);
   border: 1px solid var(--orange1);
@@ -191,7 +191,8 @@ footer {
   cursor: pointer;
   font-family: inherit;
 }
-.btn-restore:hover { background: var(--orange3); }
+.btn-undo:hover:not(:disabled) { background: var(--orange3); }
+.btn-undo:disabled { color: var(--grey2); border-color: var(--grey3); cursor: default; }
 
 .btn-unlock {
   background: var(--blue0);

@@ -1,8 +1,8 @@
 // ── Public entry ─────────────────────────────────────────────────────────────
 
 export function renderContextSection(container, ctx, {
-  onNewContext, onClarify, onReduce, onRestore = null, onToggleLock,
-  onDeleteObject, onDeleteAttribute,
+  onNewContext, onClarify, onReduce, onUndo, canUndo = false, onToggleLock,
+  onDeleteObject, onDeleteAttribute, onBeforeMutate,
   locked = false, notice = null,
 } = {}) {
   container.innerHTML = "";
@@ -19,7 +19,13 @@ export function renderContextSection(container, ctx, {
   toolbar.appendChild(el("span", "toolbar-sep"));
   addBtn("Clarify", onClarify);
   addBtn("Reduce",  onReduce);
-  if (onRestore) addBtn("Restore", onRestore, "btn-restore");
+  const undoBtn = el("button", "btn-undo");
+  undoBtn.textContent = "Undo";
+  undoBtn.disabled = !canUndo;
+  undoBtn.addEventListener("click", onUndo);
+  toolbar.appendChild(undoBtn);
+
+  function beforeMutate() { onBeforeMutate(); undoBtn.disabled = false; }
   toolbar.appendChild(el("span", "toolbar-sep"));
   addBtn(locked ? "\uD83D\uDD13 Unlock Context" : "\uD83D\uDD12 Lock Context", onToggleLock, locked ? "btn-unlock" : "btn-secondary");
   container.appendChild(toolbar);
@@ -37,7 +43,7 @@ export function renderContextSection(container, ctx, {
   container.appendChild(exportWrap);
 
   function rerender() {
-    renderTable(tableWrap, ctx, locked, { onDeleteObject, onDeleteAttribute }, rerender);
+    renderTable(tableWrap, ctx, locked, { onDeleteObject, onDeleteAttribute, onBeforeMutate: beforeMutate }, rerender);
     renderExport(exportWrap, ctx);
   }
 
@@ -46,7 +52,7 @@ export function renderContextSection(container, ctx, {
 
 // ── Table ─────────────────────────────────────────────────────────────────────
 
-function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute }, rerender) {
+function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute, onBeforeMutate }, rerender) {
   container.innerHTML = "";
 
   const table = document.createElement("table");
@@ -65,7 +71,7 @@ function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute
       span.textContent = ctx.attributes[j];
       th.appendChild(span);
     } else {
-      makeEditable(th, ctx.attributes[j], name => ctx.renameAttribute(j, name));
+      makeEditable(th, ctx.attributes[j], name => ctx.renameAttribute(j, name), onBeforeMutate);
       addDeleteBtn(th, () => onDeleteAttribute(j));
     }
     headerRow.appendChild(th);
@@ -78,7 +84,7 @@ function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute
     addAttrBtn.setAttribute("tabindex", "-1");
     addAttrTh.title = "Add attribute";
     addAttrTh.appendChild(addAttrBtn);
-    addAttrTh.addEventListener("click", () => { ctx.addAttribute(""); rerender(); });
+    addAttrTh.addEventListener("click", () => { onBeforeMutate(); ctx.addAttribute(""); rerender(); });
     headerRow.appendChild(addAttrTh);
   }
 
@@ -94,7 +100,7 @@ function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute
       span.textContent = ctx.objects[i];
       th.appendChild(span);
     } else {
-      makeEditable(th, ctx.objects[i], name => ctx.renameObject(i, name));
+      makeEditable(th, ctx.objects[i], name => ctx.renameObject(i, name), onBeforeMutate);
       addDeleteBtn(th, () => onDeleteObject(i));
     }
     row.appendChild(th);
@@ -106,6 +112,7 @@ function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute
       td.textContent = ctx.incidence[i][j] ? "×" : "";
       if (!locked) {
         td.addEventListener("click", () => {
+          onBeforeMutate();
           ctx.toggle(i, j);
           td.classList.toggle("marked", !!ctx.incidence[i][j]);
           td.textContent = ctx.incidence[i][j] ? "×" : "";
@@ -125,7 +132,7 @@ function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute
     addObjBtn.setAttribute("tabindex", "-1");
     addObjTh.title = "Add object";
     addObjTh.appendChild(addObjBtn);
-    addObjTh.addEventListener("click", () => { ctx.addObject(""); rerender(); });
+    addObjTh.addEventListener("click", () => { onBeforeMutate(); ctx.addObject(""); rerender(); });
     addObjRow.appendChild(addObjTh);
     for (let j = 0; j <= ctx.attributes.length; j++) {
       addObjRow.insertCell().className = "add-row-spacer";
@@ -139,7 +146,7 @@ function renderTable(container, ctx, locked, { onDeleteObject, onDeleteAttribute
 
 // ── Editable header cell ──────────────────────────────────────────────────────
 
-function makeEditable(th, initialValue, onChange) {
+function makeEditable(th, initialValue, onChange, onBeforeMutate) {
   const wrap = el("div", "header-label");
   const span = document.createElement("span");
   span.textContent = initialValue;
@@ -160,8 +167,11 @@ function makeEditable(th, initialValue, onChange) {
     input.select();
 
     const commit = () => {
-      onChange(input.value);
-      span.textContent = input.value;
+      if (input.value !== span.textContent) {
+        onBeforeMutate();
+        onChange(input.value);
+        span.textContent = input.value;
+      }
       wrap.replaceChildren(span);
     };
 

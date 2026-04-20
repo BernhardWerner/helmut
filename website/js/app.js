@@ -5,9 +5,32 @@ const createSection  = document.getElementById("create-section");
 const contextSection = document.getElementById("context-section");
 
 let currentContext = null;
-let savedContext   = null;
 let currentNotice  = null;
 let locked         = false;
+const undoStack    = [];
+const MAX_UNDO     = 50;
+
+// ── Undo ──────────────────────────────────────────────────────────────────────
+
+function pushUndo() {
+  undoStack.push(currentContext.clone());
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  currentContext = undoStack.pop();
+  currentNotice  = null;
+  renderCurrent();
+}
+
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (undoStack.length > 0) { e.preventDefault(); undo(); }
+  }
+});
 
 // ── Create form ───────────────────────────────────────────────────────────────
 
@@ -61,10 +84,10 @@ function showCreateForm() {
 // ── Context view ──────────────────────────────────────────────────────────────
 
 function showContext(ctx) {
-  currentContext = ctx;
-  savedContext   = null;
-  currentNotice  = null;
-  locked         = false;
+  currentContext   = ctx;
+  currentNotice    = null;
+  locked           = false;
+  undoStack.length = 0;
   createSection.hidden  = true;
   contextSection.hidden = false;
   renderCurrent();
@@ -72,27 +95,18 @@ function showContext(ctx) {
 
 function renderCurrent() {
   renderContextSection(contextSection, currentContext, {
-    onNewContext:     showCreateForm,
-    onClarify:        () => applyOp("clarify"),
-    onReduce:         () => applyOp("reduce"),
-    onRestore:        savedContext ? restoreContext : null,
-    onToggleLock:     () => { locked = !locked; renderCurrent(); },
-    onDeleteObject:   i => deleteItem("object",    i),
+    onNewContext:      showCreateForm,
+    onClarify:         () => applyOp("clarify"),
+    onReduce:          () => applyOp("reduce"),
+    onUndo:            undo,
+    canUndo:           undoStack.length > 0,
+    onToggleLock:      () => { locked = !locked; renderCurrent(); },
+    onDeleteObject:    i => deleteItem("object",    i),
     onDeleteAttribute: j => deleteItem("attribute", j),
+    onBeforeMutate:    pushUndo,
     locked,
-    notice:           currentNotice,
+    notice:            currentNotice,
   });
-}
-
-function deleteItem(kind, index) {
-  const name = kind === "object"
-    ? currentContext.objects[index]
-    : currentContext.attributes[index];
-  savedContext  = currentContext.clone();
-  currentNotice = `Removed ${kind} "${name}".`;
-  if (kind === "object") currentContext.deleteObject(index);
-  else                   currentContext.deleteAttribute(index);
-  renderCurrent();
 }
 
 function applyOp(op) {
@@ -107,16 +121,20 @@ function applyOp(op) {
     return;
   }
 
-  savedContext   = before;
+  pushUndo();
   currentContext = after;
   currentNotice  = buildNotice(op, dObj, dAttr);
   renderCurrent();
 }
 
-function restoreContext() {
-  currentContext = savedContext;
-  savedContext   = null;
-  currentNotice  = "Context restored.";
+function deleteItem(kind, index) {
+  const name = kind === "object"
+    ? currentContext.objects[index]
+    : currentContext.attributes[index];
+  pushUndo();
+  currentNotice = `Removed ${kind} "${name}".`;
+  if (kind === "object") currentContext.deleteObject(index);
+  else                   currentContext.deleteAttribute(index);
   renderCurrent();
 }
 
