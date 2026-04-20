@@ -108,6 +108,7 @@ export class Context {
   // ── Derivation & closure ──────────────────────────────────────────────────
 
   // Empty A must return all attribute indices (vacuously true).
+  objectDerivation(A) {
     return Array.from({ length: this.attributes.length }, (_, j) => j)
       .filter(j => A.every(i => this.incidence[i][j]));
   }
