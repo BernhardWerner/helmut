@@ -102,7 +102,9 @@ function renderTable(container, ctx, rerender) {
     addObjRow.insertCell().className = "add-row-spacer";
   }
 
-  container.appendChild(table);
+  const center = el("div", "table-center");
+  center.appendChild(table);
+  container.appendChild(center);
 }
 
 // ── Editable header cell ──────────────────────────────────────────────────────
