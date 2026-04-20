@@ -20,35 +20,35 @@
   --grey3:   #d4d4d4;
   --white:   #ffffff;
 
-  --blue0:   #19418c;
-  --blue1:   #0c5aa6;
-  --blue2:   #4093bc;
-  --blue3:   #4ac1d4;
+  --blue0:   #143d82;   /* darker navy                   */
+  --blue1:   #0c5aa6;   /* unchanged                      */
+  --blue2:   #6e99c6;   /* muted mid-blue                 */
+  --blue3:   #d4e7f7;   /* soft blue tint                 */
 
-  --orange0: #d94917;
-  --orange1: #ff8c00;
-  --orange2: #ffba31;
-  --orange3: #ffe863;
+  --orange0: #b86000;   /* dark amber (was reddish)       */
+  --orange1: #ff8c00;   /* unchanged                      */
+  --orange2: #f5a93c;   /* warm peach-orange              */
+  --orange3: #fde8ca;   /* creamy tint (was yellow)       */
 
-  --green0:  #2b911c;
-  --green1:  #43ba10;
-  --green2:  #77d228;
-  --green3:  #b2ed46;
+  --green0:  #227814;   /* dark green                     */
+  --green1:  #43ba10;   /* unchanged                      */
+  --green2:  #7dc455;   /* muted mid-green                */
+  --green3:  #d4f0be;   /* soft green tint                */
 
-  --violet0: #5f2f91;
-  --violet1: #8b3ec0;
-  --violet2: #c271e1;
-  --violet3: #eaa8f8;
+  --violet0: #6a2aa8;   /* deeper violet                  */
+  --violet1: #8b3ec0;   /* unchanged                      */
+  --violet2: #b882d8;   /* muted violet                   */
+  --violet3: #f0e0fc;   /* soft violet tint               */
 
-  --red0:    #a11208;
-  --red1:    #d22125;
-  --red2:    #e85353;
-  --red3:    #f87b95;
+  --red0:    #a01220;   /* dark red                       */
+  --red1:    #d22125;   /* unchanged                      */
+  --red2:    #e87878;   /* muted red                      */
+  --red3:    #fad8d8;   /* soft red tint                  */
 
-  --teal0:   #0a5e66;
-  --teal1:   #008077;
-  --teal2:   #08a67e;
-  --teal3:   #33e99d;
+  --teal0:   #005c55;   /* darker teal                    */
+  --teal1:   #008077;   /* unchanged                      */
+  --teal2:   #4aaa9e;   /* muted teal                     */
+  --teal3:   #c8ecea;   /* soft teal tint                 */
 
   /* ── Semantic aliases ──────────────────────────────────────────────────── */
   --color-bg:           var(--white);
@@ -226,8 +226,8 @@ footer {
 
 /* ── Notice ──────────────────────────────────────────────────────────────── */
 .notice {
-  background: var(--white);
-  color: var(--blue1);
+  background: var(--blue3);
+  color: var(--blue0);
   border: 2px solid var(--blue1);
   border-radius: 4px;
   padding: 0.5rem 1rem;
