@@ -94,6 +94,34 @@ export class Context {
     ];
   }
 
+  // ── Derivation & closure ──────────────────────────────────────────────────
+
+  // A′ — attributes shared by every object in A (array of object indices).
+  // Empty A returns all attribute indices (vacuously true).
+  objectDerivation(A) {
+    return Array.from({ length: this.attributes.length }, (_, j) => j)
+      .filter(j => A.every(i => this.incidence[i][j]));
+  }
+
+  // B′ — objects that possess every attribute in B (array of attribute indices).
+  // Empty B returns all object indices (vacuously true).
+  attributeDerivation(B) {
+    return Array.from({ length: this.objects.length }, (_, i) => i)
+      .filter(i => B.every(j => this.incidence[i][j]));
+  }
+
+  // B′′ — closure of an attribute set: the smallest closed set containing B.
+  attributeClosure(B) {
+    return this.objectDerivation(this.attributeDerivation(B));
+  }
+
+  // A′′ — closure of an object set: the smallest closed set containing A.
+  objectClosure(A) {
+    return this.attributeDerivation(this.objectDerivation(A));
+  }
+
+  // ── Serialisation ─────────────────────────────────────────────────────────
+
   toCSV({ marked = "X", empty = "", headers = true } = {}) {
     const esc = s => /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     const rows = [];
