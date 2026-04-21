@@ -47,12 +47,36 @@ export function generateNames(count, scheme) {
 
 export class Concept {
   constructor(extent, intent) {
-    this.extent = extent.slice(); // sorted object indices
-    this.intent = intent.slice(); // sorted attribute indices
+    this.extent  = extent.slice(); // sorted object indices
+    this.intent  = intent.slice(); // sorted attribute indices
+    this.support = null;           // set by enumerateConcepts; null if constructed manually
   }
 }
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
+
+function parseCSVRows(text) {
+  const rows = [];
+  let row = [], cell = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"')  inQuotes = false;
+      else                  cell += ch;
+    } else {
+      if      (ch === '"')  inQuotes = true;
+      else if (ch === ',')  { row.push(cell); cell = ''; }
+      else if (ch === '\r') { /* skip bare CR in CRLF line endings */ }
+      else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else                   cell += ch;
+    }
+  }
+  if (cell !== '' || row.length > 0) { row.push(cell); rows.push(row); }
+  // Drop any trailing blank rows introduced by a final newline
+  while (rows.length > 0 && rows[rows.length - 1].every(c => c === '')) rows.pop();
+  return rows;
+}
 
 // Does rowA have all the 1s of rowB, plus at least one more?
 function rowStrictlyContains(rowA, rowB) {
@@ -220,18 +244,28 @@ export class Context {
     return this.attributeDerivation(this.objectDerivation(A));
   }
 
+  // Relative support of a concept: |extent| / |G|, in [0, 1].
+  supportOf(concept) {
+    return this.objects.length === 0 ? 0 : concept.extent.length / this.objects.length;
+  }
+
   // ── Concept enumeration ───────────────────────────────────────────────────
 
   // Returns all concepts in lectic order of their intents.
   // Uses Ganter's Next Closure algorithm in O(|G|·|M|) steps per concept.
-  enumerateConcepts() {
+  // minSupport (0–1): omit concepts whose relative support falls below this threshold.
+  enumerateConcepts({ minSupport = 0 } = {}) {
     const m = this.attributes.length;
+    const g = this.objects.length;
     const concepts = [];
     // ∅'' is the lectically smallest closed set and always the top concept's intent. Starting from empty set directly would skip it when empty set is not itself closed.
     let intent = this.attributeClosure([]);
 
     while (true) {
-      concepts.push(new Concept(this.attributeDerivation(intent), intent));
+      const extent  = this.attributeDerivation(intent);
+      const concept = new Concept(extent, intent);
+      concept.support = g === 0 ? 0 : extent.length / g;
+      if (concept.support >= minSupport) concepts.push(concept);
 
       // Lectic order is determined by the highest-indexed position where two sets differ, so we scan right-to-left to find the first position where we can "increment".
       const B = new Array(m).fill(false);
@@ -277,6 +311,35 @@ export class Context {
   }
 
   // ── Serialisation ─────────────────────────────────────────────────────────
+
+  // Parses a CSV string produced by toCSV() back into a Context.
+  // hasHeaders: whether the CSV has a name row/column.
+  // isBinary: true for 1/0 format, false for X/blank.
+  static fromCSV(text, { hasHeaders = true, isBinary = false } = {}) {
+    const rows = parseCSVRows(text);
+    if (rows.length === 0) return Context.create(0, 0);
+
+    const parseCell = v => isBinary ? (v.trim() === '1' ? 1 : 0)
+                                    : (v.trim().toUpperCase() === 'X' ? 1 : 0);
+    let objects, attributes, incidence;
+
+    if (hasHeaders) {
+      attributes = rows[0].slice(1);
+      objects    = rows.slice(1).map(r => r[0] ?? '');
+      incidence  = rows.slice(1).map(r =>
+        Array.from({ length: attributes.length }, (_, j) => parseCell(r[j + 1] ?? ''))
+      );
+    } else {
+      const numAttr = Math.max(...rows.map(r => r.length));
+      objects    = generateNames(rows.length, 'numeric');
+      attributes = generateNames(numAttr, 'numeric');
+      incidence  = rows.map(r =>
+        Array.from({ length: numAttr }, (_, j) => parseCell(r[j] ?? ''))
+      );
+    }
+
+    return new Context(objects, attributes, incidence);
+  }
 
   toCSV({ marked = "X", empty = "", headers = true } = {}) {
     const esc = s => /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -352,4 +415,28 @@ export function computeArrows(context) {
   }
 
   return arrows;
+}
+
+// ── CSV format detection ───────────────────────────────────────────────────────
+
+// Sniffs a CSV string and returns best-guess format options for fromCSV().
+// hasHeaders: top-left cell is empty, which is the signature of the toCSV() header format.
+// isBinary:   data cells contain "1"/"0" but no "X" — distinguishes 1/0 from X/blank export.
+export function detectCSVFormat(text) {
+  const rows = parseCSVRows(text);
+  if (rows.length === 0) return { hasHeaders: false, isBinary: false };
+
+  const hasHeaders = rows[0][0].trim() === '';
+
+  let hasX = false, has1 = false;
+  const startRow = hasHeaders ? 1 : 0;
+  const startCol = hasHeaders ? 1 : 0;
+  for (let i = startRow; i < rows.length; i++)
+    for (let j = startCol; j < rows[i].length; j++) {
+      const v = rows[i][j].trim().toUpperCase();
+      if (v === 'X') hasX = true;
+      if (v === '1') has1 = true;
+    }
+
+  return { hasHeaders, isBinary: !hasX && has1 };
 }
