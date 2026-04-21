@@ -1,4 +1,5 @@
 [
+  { "file": "bodies_of_water.csv", "name": "Bodies of water" },
   { "file": "pokemon_strong.csv", "name": "Pokémon strong-against" },
   { "file": "pokemon_weak.csv", "name": "Pokémon weak-against" }
 ]

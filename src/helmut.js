@@ -244,6 +244,28 @@ export class Context {
     return this.attributeDerivation(this.objectDerivation(A));
   }
 
+  // ── Introducing concepts ───────────────────────────────────────────────────
+
+  // The concept that "introduces" object i: the unique concept with the largest
+  // intent whose extent still contains i. Equivalent to closing the singleton {i}.
+  objectConcept(i) {
+    const intent = this.objectDerivation([i]);
+    const extent = this.attributeDerivation(intent);
+    const c = new Concept(extent, intent);
+    c.support = this.supportOf(c);
+    return c;
+  }
+
+  // The concept that "introduces" attribute j: the unique concept with the largest
+  // extent whose intent still contains j. Equivalent to closing the singleton {j}.
+  attributeConcept(j) {
+    const intent = this.attributeClosure([j]);
+    const extent = this.attributeDerivation(intent);
+    const c = new Concept(extent, intent);
+    c.support = this.supportOf(c);
+    return c;
+  }
+
   // Relative support of a concept: |extent| / |G|, in [0, 1].
   supportOf(concept) {
     return this.objects.length === 0 ? 0 : concept.extent.length / this.objects.length;
