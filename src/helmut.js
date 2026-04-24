@@ -439,6 +439,49 @@ export function computeArrows(context) {
   return arrows;
 }
 
+// ── Diagram Layout ────────────────────────────────────────────────────────────
+
+// Assigns abstract 2D positions to each concept node.
+// y = longest ascending chain from the bottom concept (increases upward).
+// x = additive diagram: each attribute gets an evenly-spaced x-value;
+//     x(C) = Σ xAttr[m] for m ∈ intent(C).
+// Returns { lattice, positions } per the DiagramLayout spec.
+export function layoutLattice(lattice) {
+  const { concepts, covers } = lattice;
+  const n = concepts.length;
+  const m = lattice.context.attributes.length;
+
+  // ── Y: longest path from bottom via Kahn topological sort ──────────────────
+  // covers[k] = [lo, hi]: lo is lower in the lattice (smaller extent), hi is higher.
+  // In-degree counts how many lower neighbors each node has.
+  const above   = Array.from({ length: n }, () => []);
+  const inDeg   = new Array(n).fill(0);
+  for (const [lo, hi] of covers) {
+    above[lo].push(hi);
+    inDeg[hi]++;
+  }
+
+  const y = new Array(n).fill(0);
+  const queue = [];
+  for (let i = 0; i < n; i++) if (inDeg[i] === 0) queue.push(i);
+
+  while (queue.length) {
+    const c = queue.shift();
+    for (const hi of above[c]) {
+      if (y[c] + 1 > y[hi]) y[hi] = y[c] + 1;
+      if (--inDeg[hi] === 0) queue.push(hi);
+    }
+  }
+
+  // ── X: additive diagram ────────────────────────────────────────────────────
+  // Attributes are evenly spaced around 0: α_j = j − (m−1)/2
+  const xAttr = Array.from({ length: m }, (_, j) => j - (m - 1) / 2);
+  const x = concepts.map(c => c.intent.reduce((sum, j) => sum + xAttr[j], 0));
+
+  const positions = concepts.map((_, i) => [x[i], y[i]]);
+  return { lattice, positions };
+}
+
 // ── CSV format detection ───────────────────────────────────────────────────────
 
 // Sniffs a CSV string and returns best-guess format options for fromCSV().
