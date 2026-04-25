@@ -4,6 +4,10 @@ import { renderContextSection } from "./context-view.js";
 const createSection  = document.getElementById("create-section");
 const contextSection = document.getElementById("context-section");
 
+// Persistent reference to the context tab pane — set once by setupContextLayout.
+// renderCurrent targets this element so re-renders never touch the diagram pane.
+let contextPane = null;
+
 let currentContext = null;
 let currentNotice  = null;
 let locked         = false;
@@ -32,6 +36,70 @@ document.addEventListener("keydown", e => {
     if (undoStack.length > 0) { e.preventDefault(); undo(); }
   }
 });
+
+// ── Context layout (tabs + canvas + CindyJS) ──────────────────────────────────
+
+// Called once when the context view is first shown. Creates the persistent tab
+// structure, canvas, and CindyJS instance. Subsequent showContext calls are
+// no-ops here — only renderCurrent needs to run.
+function setupContextLayout() {
+  if (contextPane) return;
+
+  const mk = (tag, cls) => Object.assign(document.createElement(tag), { className: cls });
+
+  // Tab bar
+  const tabBar        = mk("div", "tab-bar");
+  const contextTabBtn = mk("button", "tab-btn active");
+  const diagramTabBtn = mk("button", "tab-btn");
+  contextTabBtn.textContent = "Context";
+  diagramTabBtn.textContent = "Diagram";
+  tabBar.append(contextTabBtn, diagramTabBtn);
+  contextSection.appendChild(tabBar);
+
+  // Panes
+  contextPane       = mk("div", "tab-pane");
+  const diagramPane = mk("div", "tab-pane diagram-pane");
+  diagramPane.hidden = true;
+  contextSection.append(contextPane, diagramPane);
+
+  // Tab switching
+  contextTabBtn.addEventListener("click", () => {
+    contextPane.hidden  = false;
+    diagramPane.hidden  = true;
+    contextTabBtn.classList.add("active");
+    diagramTabBtn.classList.remove("active");
+  });
+  diagramTabBtn.addEventListener("click", () => {
+    contextPane.hidden  = true;
+    diagramPane.hidden  = false;
+    contextTabBtn.classList.remove("active");
+    diagramTabBtn.classList.add("active");
+  });
+
+  // Canvas
+  const canvas = document.createElement("canvas");
+  canvas.id    = "CSCanvas";
+  diagramPane.appendChild(canvas);
+
+  // Keep pixel dimensions in sync with CSS layout so CindyJS reads correct resolution.
+  const ro = new ResizeObserver(() => {
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  });
+  ro.observe(canvas);
+
+  // CindyJS — globally available as window.cindy for use in CindyScript and
+  // future rendering calls.
+  window.cindy = CindyJS({
+    canvasname: "CSCanvas",
+    scripts:    "cs*",
+    use:        ["katex", "CindyGL"],
+    import: {
+      packages: ["js/cindy/responsive"],
+      init:     ["js/cindy/corvis", "js/cindy/color"],
+    },
+  });
+}
 
 // ── Create form ───────────────────────────────────────────────────────────────
 
@@ -169,11 +237,12 @@ function showContext(ctx) {
   undoStack.length = 0;
   createSection.hidden  = true;
   contextSection.hidden = false;
+  setupContextLayout();
   renderCurrent();
 }
 
 function renderCurrent() {
-  renderContextSection(contextSection, currentContext, {
+  renderContextSection(contextPane, currentContext, {
     onNewContext:      showCreateForm,
     onClarify:         () => applyOp("clarify"),
     onReduce:          () => applyOp("reduce"),
