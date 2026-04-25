@@ -69,35 +69,36 @@ function setupContextLayout() {
     contextTabBtn.classList.add("active");
     diagramTabBtn.classList.remove("active");
   });
-  diagramTabBtn.addEventListener("click", () => {
-    contextPane.hidden  = true;
-    diagramPane.hidden  = false;
-    contextTabBtn.classList.remove("active");
-    diagramTabBtn.classList.add("active");
-  });
-
   // Canvas
   const canvas = document.createElement("canvas");
   canvas.id    = "CSCanvas";
   diagramPane.appendChild(canvas);
 
-  // Keep pixel dimensions in sync with CSS layout so CindyJS reads correct resolution.
-  const ro = new ResizeObserver(() => {
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-  });
-  ro.observe(canvas);
+  // CindyJS is initialized lazily on first Diagram tab click. If we init while
+  // the pane is hidden, offsetWidth/Height are 0 — CindyJS would bake "0px"
+  // as inline style on its wrapper div, permanently hiding the canvas.
+  let cindyReady = false;
 
-  // CindyJS — globally available as window.cindy for use in CindyScript and
-  // future rendering calls.
-  window.cindy = CindyJS({
-    canvasname: "CSCanvas",
-    scripts:    "cs*",
-    use:        ["katex", "CindyGL"],
-    import: {
-      packages: ["js/cindy/responsive"],
-      init:     ["js/cindy/corvis", "js/cindy/color"],
-    },
+  diagramTabBtn.addEventListener("click", () => {
+    contextPane.hidden  = true;
+    diagramPane.hidden  = false;
+    contextTabBtn.classList.remove("active");
+    diagramTabBtn.classList.add("active");
+
+    if (!cindyReady) {
+      cindyReady = true;
+      canvas.width  = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      window.cindy = CindyJS({
+        canvasname: "CSCanvas",
+        scripts:    "cs*",
+        use:        ["katex", "CindyGL"],
+        import: {
+          packages: ["./js/cindy/responsive", "./js/cindy/hasse"],
+          init:     ["./js/cindy/corvis", "./js/cindy/color"],
+        },
+      });
+    }
   });
 }
 

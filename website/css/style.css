@@ -316,8 +316,9 @@ footer {
 
 #CSCanvas {
   display: block;
-  width: 100%;
-  height: 100%;
+  /* !important overrides the pixel-dimension inline style CindyJS sets on its wrapper div */
+  width: 100% !important;
+  height: 100% !important;
   outline: 1px solid black;
 }
 

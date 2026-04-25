@@ -1,0 +1,1 @@
+drawall(screenbounds(), size -> 5);

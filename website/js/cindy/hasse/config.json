@@ -1,0 +1,23 @@
+{
+    "init": [
+        {"name": "init.cjs", "place": 1}
+    ],
+    "draw": [
+        {"name": "draw.cjs", "place": 1}
+    ],
+    "tick": [
+        {"name": "tick.cjs", "place": 1}
+    ],
+    "mousemove": [
+        {"name": "mousemove.cjs", "place": 1}
+    ],
+    "mousedown": [
+        {"name": "mousedown.cjs", "place": 1}
+    ],
+    "mousedrag": [
+        {"name": "mousedrag.cjs", "place": 1}
+    ],
+    "mouseup": [
+        {"name": "mouseup.cjs", "place": 1}
+    ]
+}
