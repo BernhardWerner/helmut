@@ -311,14 +311,12 @@ footer {
 
 /* ── Diagram pane ────────────────────────────────────────────────────────── */
 .diagram-pane {
-  height: calc(100vh - 200px);
 }
 
 #CSCanvas {
   display: block;
-  /* !important overrides the pixel-dimension inline style CindyJS sets on its wrapper div */
-  width: 100% !important;
-  height: 100% !important;
+  width: 1200px;
+  height: 900px;
   outline: 1px solid black;
 }
 

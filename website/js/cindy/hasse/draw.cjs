@@ -1,1 +1,6 @@
-drawall(screenbounds(), size -> 5);
+
+
+forall(diagram.coordinates,
+    fillcircle(#, nodeSize, color -> orange);
+);
+

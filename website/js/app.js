@@ -69,36 +69,36 @@ function setupContextLayout() {
     contextTabBtn.classList.add("active");
     diagramTabBtn.classList.remove("active");
   });
-  // Canvas
+  // Canvas — no width/height set here on purpose. CindyJS reads those as HTML
+  // attributes to decide whether to freeze its wrapper div with inline px values.
+  // An untouched canvas has no such attributes, so CindyJS sets no inline style
+  // and our CSS width/height applies freely.
   const canvas = document.createElement("canvas");
   canvas.id    = "CSCanvas";
   diagramPane.appendChild(canvas);
 
-  // CindyJS is initialized lazily on first Diagram tab click. If we init while
-  // the pane is hidden, offsetWidth/Height are 0 — CindyJS would bake "0px"
-  // as inline style on its wrapper div, permanently hiding the canvas.
-  let cindyReady = false;
+  // Eager init — window.cindy is available as soon as any context is loaded,
+  // so lattice data can be pushed to CindyJS at any time.
+  window.cindy = CindyJS({
+    canvasname: "CSCanvas",
+    scripts:    "cs*",
+    use:        ["katex", "CindyGL"],
+    import: {
+      packages: ["js/cindy/hasse"],
+      init:     ["js/cindy/corvis", "js/cindy/color"],
+    },
+  });
 
   diagramTabBtn.addEventListener("click", () => {
     contextPane.hidden  = true;
     diagramPane.hidden  = false;
     contextTabBtn.classList.remove("active");
     diagramTabBtn.classList.add("active");
-
-    if (!cindyReady) {
-      cindyReady = true;
-      canvas.width  = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      window.cindy = CindyJS({
-        canvasname: "CSCanvas",
-        scripts:    "cs*",
-        use:        ["katex", "CindyGL"],
-        import: {
-          packages: ["./js/cindy/responsive", "./js/cindy/hasse"],
-          init:     ["./js/cindy/corvis", "./js/cindy/color"],
-        },
-      });
-    }
+    // CindyJS listens to window.resize and calls ha() which syncs canvas pixel
+    // buffer to clientWidth/Height and redraws. Dispatch it after unhiding so
+    // it measures the now-visible pane.
+    window.dispatchEvent(new Event("resize"));
+    if (window.cindy) window.cindy.evokeCS("startProcessTimer();");
   });
 }
 

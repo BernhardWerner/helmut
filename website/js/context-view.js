@@ -1,4 +1,4 @@
-import { computeLattice, computeArrows } from "../../src/helmut.js";
+import { computeLattice, computeArrows, layoutLattice } from "../../src/helmut.js";
 
 // ── Public entry ─────────────────────────────────────────────────────────────
 
@@ -42,8 +42,44 @@ export function renderContextSection(container, ctx, {
   };
   updateCalcBtn();
   calcBtn.addEventListener("click", () => {
-    conceptCount = computeLattice(ctx).concepts.length;
+    const lattice             = computeLattice(ctx);
+    const { positions }       = layoutLattice(lattice);
+    const { concepts, covers } = lattice;
+
+    conceptCount = concepts.length;
     updateCalcBtn();
+
+    if (window.cindy) {
+      const cs = arr => "[" + arr.join(",") + "]";
+
+      const posCS   = cs(positions.map(([x, y]) => `[${x},${y}]`));
+      const edgesCS = cs(covers.map(([lo, hi]) => `[${lo + 1},${hi + 1}]`));
+
+      const labelsCS = cs(concepts.map(c => {
+        const objs  = cs(c.extent.map(i => `"${ctx.objects[i]}"`));
+        const attrs = cs(c.intent.map(j => `"${ctx.attributes[j]}"`));
+        return `[${objs},${attrs}]`;
+      }));
+
+      // For reduced labels: build lower/upper neighbour lists from covers.
+      // An object is reduced to the lowest concept containing it — i.e. the
+      // concept whose lower neighbours' extents do not contain it.
+      // An attribute is reduced to the highest concept containing it — i.e.
+      // the concept whose upper neighbours' intents do not contain it.
+      const lower = Array.from({ length: concepts.length }, () => []);
+      const upper = Array.from({ length: concepts.length }, () => []);
+      for (const [lo, hi] of covers) { lower[hi].push(lo); upper[lo].push(hi); }
+
+      const reducedLabelsCS = cs(concepts.map((c, i) => {
+        const fromBelow = new Set(lower[i].flatMap(lo => concepts[lo].extent));
+        const fromAbove = new Set(upper[i].flatMap(hi => concepts[hi].intent));
+        const objs  = cs(c.extent.filter(o => !fromBelow.has(o)).map(o => `"${ctx.objects[o]}"`));
+        const attrs = cs(c.intent.filter(a => !fromAbove.has(a)).map(a => `"${ctx.attributes[a]}"`));
+        return `[${objs},${attrs}]`;
+      }));
+
+      window.cindy.evokeCS(`diagramData=[${posCS},${edgesCS},${labelsCS},${reducedLabelsCS}];`);
+    }
   });
 
   function beforeMutate() {
