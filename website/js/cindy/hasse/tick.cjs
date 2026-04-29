@@ -4,7 +4,7 @@ if(processTimerActive,
     processTimer = processTimer - delta;
 
     if(processTimer < 0,
-        stopanimation();
+        processTimerActive = false;
         processDiagramData();
     );
 );

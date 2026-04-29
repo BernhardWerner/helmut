@@ -84,7 +84,7 @@ function setupContextLayout() {
     scripts:    "cs*",
     use:        ["katex", "CindyGL"],
     import: {
-      packages: ["js/cindy/hasse"],
+      packages: ["js/cindy/ui", "js/cindy/hasse"],
       init:     ["js/cindy/corvis", "js/cindy/color"],
     },
   });
